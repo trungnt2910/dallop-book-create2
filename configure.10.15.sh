@@ -26,26 +26,11 @@ sudo /System/Library/CoreServices/RemoteManagement/ARDAgent.app/Contents/Resourc
 sudo /System/Library/CoreServices/RemoteManagement/ARDAgent.app/Contents/Resources/kickstart -activate
 
 #install ngrok
-brew install --cask ngrok vivaldi packages iterm2 motrix discord sublime-text
-
-#install BigSurUnicodeUpdate
-#sudo -S mount -uw / <<< $1
-aria2c https://gitlab.com/Austcool-Walker/bigsurunicodeupdate10.15/-/raw/master/build_debug/BigSurUnicodeUpdate10.15+.pkg
-sudo Installer -verbose -pkg BigSurUnicodeUpdate10.15+.pkg -target /
+brew install --cask ngrok
 
 #Show Hidden Files in Finder
 defaults write com.apple.Finder AppleShowAllFiles true
 killall Finder
-
-#install vncuser data
-aria2c https://www.dropbox.com/s/d893a08bmjnj9ta/vncuser.txz?dl=1
-sudo bsdtar -vxf vncuser.txz -C /Users/vncuser
-
-#Installing Wallpapers
-aria2c https://gitlab.com/Austcool-Walker/Wallpapers-git/-/archive/master/Wallpapers-git-master.tar.bz2
-sudo bsdtar -vxf Wallpapers-git-master.tar.bz2 -C /Library
-sudo cp -v -R /Library/Wallpapers-git-master/./ /Library/"Desktop Pictures"
-sudo rm -v -R /Library/Wallpapers-git-master/
 
 #setting permissions on vncuser data files
 sudo chmod -v -R 0777 /Users/vncuser
