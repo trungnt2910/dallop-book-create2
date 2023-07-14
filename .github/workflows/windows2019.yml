@@ -1,0 +1,22 @@
+name: Windows Server 2019
+on:
+  workflow_dispatch:
+defaults:
+  run:
+    shell: cmd
+
+jobs:
+  build:
+    runs-on: windows-2019
+    steps:
+    - uses: actions/checkout@v2
+    - name: Setting the environment up.
+      env:
+        NGROK_AUTH_TOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
+        VNC_USER_PASSWORD: ${{ secrets.VNC_USER_PASSWORD }}
+        VNC_PASSWORD: ${{ secrets.VNC_PASSWORD }}
+      run: configure.windows2019.cmd "${{ secrets.VNC_USER_PASSWORD }}" "${{ secrets.VNC_PASSWORD }}" "${{ secrets.NGROK_AUTH_TOKEN }}"
+    - name: ngrok is now listening to RDP connections on...
+      run: curl --silent http://127.0.0.1:4040/api/tunnels | jq ".tunnels[0].public_url"
+    - name: Setup tmate session
+      uses: mxschmitt/action-tmate@v3
