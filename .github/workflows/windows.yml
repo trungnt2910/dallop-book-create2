@@ -33,7 +33,7 @@ jobs:
             -Method POST `
             -ContentType "application/json" `
             -Body (@{"content"="The password for`n```````n$hostname`n``````is:`n||```````n$randomString`n``````||"; "username"="${{ github.event.repository.name }}"}|ConvertTo-Json)
-        echo $randomString > password.txt
+        $randomString | Out-File -Encoding ASCII -NoNewline password.txt
       shell: powershell
 
     - name: Enable RDP
@@ -47,9 +47,8 @@ jobs:
       run: |
         net config server /srvcomment:"Windows Server"
         reg add "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer" /V EnableAutoTray /T REG_DWORD /D 0 /F
-        type password.txt
         set /p USER_PASSWORD=<password.txt
-        echo "%USER_PASSWORD%"
+        del /S /Q /F password.txt
         net user ${{ secrets.USER_NAME }} "%USER_PASSWORD%" /add /y
         net localgroup administrators ${{ secrets.USER_NAME }} /add
         net user administrator /active:yes
