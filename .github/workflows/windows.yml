@@ -30,33 +30,20 @@ jobs:
 
     - name: Enable services for RDP
       run: |
-        net config server /srvcomment:"Windows Server 2022"
+        net config server /srvcomment:"Windows Server"
         reg add "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer" /V EnableAutoTray /T REG_DWORD /D 0 /F
-        net user RDP_USER ${{ secrets.VNC_USER_PASSWORD }} /add
-        net localgroup administrators RDP_USER /add
+        net user ${{ secrets.USER_NAME }} ${{ secrets.VNC_USER_PASSWORD }} /add
+        net localgroup administrators ${{ secrets.USER_NAME }} /add
         net user administrator /active:yes
         net user installer /delete
         diskperf -Y
         sc config Audiosrv start= auto
         sc start audiosrv
-        icacls C:\Windows\Temp /grant RDP_USER:F
-        icacls C:\Windows\installer /grant RDP_USER:F
+        icacls C:\Windows\Temp /grant ${{ secrets.USER_NAME }}:F
+        icacls C:\Windows\installer /grant ${{ secrets.USER_NAME }}:F
       shell: cmd
 
-    - name: Install and setup Tailscale
-      run: |
-        choco install tailscale
-        git clone https://github.com/badrelmers/RefrEnv --depth 1
-        call RefrEnv\refrenv.bat
-        del /S /Q /F RefrEnv
-        rmdir /S /Q RefrEnv
-        tailscale up --authkey ${{ secrets.TAILSCALE_AUTHKEY }} --accept-risk all --advertise-exit-node --unattended
-      shell: cmd
-
-    - name: Device has joined Tailscale network as...
-      run: hostname
-
-    - name: Install and setup SSH
+    - name: Enable SSH
       run: |
         powershell -Command "Add-WindowsCapability -Online -Name OpenSSH.Server~~~~0.0.1.0"
         powershell -Command "Start-Service sshd"
@@ -65,6 +52,19 @@ jobs:
         icacls "%ProgramData%\ssh\administrators_authorized_keys" /inheritance:r /grant "Administrators:F" /grant "SYSTEM:F"
       shell: cmd
 
+    - name: Install and setup Tailscale
+      run: |
+        choco install tailscale
+        git clone https://github.com/badrelmers/RefrEnv --depth 1
+        call RefrEnv\refrenv.bat
+        del /S /Q /F RefrEnv >NUL 2>&1
+        rmdir /S /Q RefrEnv >NUL 2>&1
+        tailscale up --authkey ${{ secrets.TAILSCALE_AUTHKEY }} --accept-risk all --advertise-exit-node --unattended
+      shell: cmd
+
+    - name: Device has joined Tailscale network as...
+      run: hostname
+
     - name: Ping loop
       run: |
         while (1)
@@ -72,6 +72,6 @@ jobs:
             $hostName = (hostname | Out-String).Trim()
             echo "Device has joined Tailscale network as <$hostName>."
             ping ${{ secrets.TAILSCALE_HOMESERVER }} -n 1
-            sleep 1
+            sleep 60
         }
       shell: powershell
