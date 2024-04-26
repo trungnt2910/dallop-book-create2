@@ -1,0 +1,99 @@
+name: macOS
+on:
+  workflow_dispatch:
+    inputs:
+        macver:
+          description: The version of macOS to run
+          required: true
+          default: 'latest'
+          type: choice
+          options:
+            - '10.15'
+            - '11'
+            - '12'
+            - '13'
+            - '14'
+            - 'latest'
+defaults:
+  run:
+    shell: bash
+
+jobs:
+    build:
+        runs-on: macos-${{ inputs.macver }}
+        steps:
+        - uses: actions/checkout@v2
+
+        - name: Generate random password
+          run: |
+            $randomBytesArray = New-Object byte[] 64
+            $rngObject = New-Object System.Security.Cryptography.RNGCryptoServiceProvider
+            $rngObject.GetBytes($randomBytesArray)
+            $hostname = (hostname | Out-String).Trim()
+            $randomString = [System.Convert]::ToBase64String($randomBytesArray)
+            Invoke-WebRequest `
+                -Uri ${{ secrets.DISCORD_WEBHOOK }} `
+                -Method POST `
+                -ContentType "application/json" `
+                -Body (@{"content"="The password for`n```````n$hostname`n``````is:`n||```````n$randomString`n``````||"; "username"="${{ github.event.repository.name }}"}|ConvertTo-Json)
+            $randomString | Out-File -Encoding ASCII password.txt
+          shell: pwsh
+
+        - name: Disable spotlight indexing
+          run: sudo mdutil -i off -a
+
+        - name: Create new account
+          run: |
+            sudo dscl . -create /Users/${{ secrets.USER_NAME }}
+            sudo dscl . -create /Users/${{ secrets.USER_NAME }} UserShell /bin/bash
+            sudo dscl . -create /Users/${{ secrets.USER_NAME }} RealName "${{ github.repository_owner }}"
+            sudo dscl . -create /Users/${{ secrets.USER_NAME }} UniqueID 1001
+            sudo dscl . -create /Users/${{ secrets.USER_NAME }} PrimaryGroupID 80
+            sudo dscl . -create /Users/${{ secrets.USER_NAME }} NFSHomeDirectory /Users/vncuser
+            sudo dscl . -passwd /Users/${{ secrets.USER_NAME }} "$(cat password.txt)"
+            sudo dscl . -passwd /Users/${{ secrets.USER_NAME }} "$(cat password.txt)"
+            sudo createhomedir -c -u ${{ secrets.USER_NAME }} > /dev/null
+
+        - name: Enable VNC
+          run: |
+            sudo /System/Library/CoreServices/RemoteManagement/ARDAgent.app/Contents/Resources/kickstart -configure -allowAccessFor -allUsers -privs -all
+            sudo /System/Library/CoreServices/RemoteManagement/ARDAgent.app/Contents/Resources/kickstart -configure -clientopts -setvnclegacy -vnclegacy yes
+
+        - name: Set VNC password
+          run: |
+              # http://hints.macworld.com/article.php?story=20071103011608872
+              echo "$(cat password.txt)" | perl -we 'BEGIN { @k = unpack "C*", pack "H*", "1734516E8BA8C5E2FF1C39567390ADCA"}; $_ = <>; chomp; s/^(.{8}).*/$1/; @p = unpack "C*", $_; foreach (@k) { printf "%02X", $_ ^ (shift @p || 0) }; print "\n"' | sudo tee /Library/Preferences/com.apple.VNCSettings.txt
+              rm -rf password.txt
+
+        - name: Start VNC
+          run: |
+            sudo /System/Library/CoreServices/RemoteManagement/ARDAgent.app/Contents/Resources/kickstart -restart -agent -console
+            sudo /System/Library/CoreServices/RemoteManagement/ARDAgent.app/Contents/Resources/kickstart -activate
+
+        - name: Install Tailscale
+          run: |
+            brew install go
+            go install tailscale.com/cmd/tailscale{,d}@main
+            sudo $HOME/go/bin/tailscaled
+            $HOME/go/bin/tailscale up --authkey ${{ secrets.TAILSCALE_AUTHKEY }} --accept-risk all --ssh --advertise-exit-node --unattended
+
+        - name: Send notification
+          run: |
+            $hostname = (hostname | Out-String).Trim()
+            Invoke-WebRequest `
+                -Uri ${{ secrets.DISCORD_WEBHOOK }} `
+                -Method POST `
+                -ContentType "application/json" `
+                -Body (@{"content"="Your Virtual Machine`n```````n$hostname`n``````is ready!"; "username"="${{ github.event.repository.name }}"}|ConvertTo-Json)
+          shell: pwsh
+
+        - name: Ping loop
+          run: |
+            while (1)
+            {
+                $hostName = (hostname | Out-String).Trim()
+                echo "Device has joined Tailscale network as <$hostName>."
+                ping ${{ secrets.TAILSCALE_HOMESERVER }} -c 1
+                sleep 60
+            }
+          shell: pwsh
