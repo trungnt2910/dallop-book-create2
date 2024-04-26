@@ -27,6 +27,6 @@ ICACLS C:\Windows\installer /grant RDP_USER:F
 rem Install and setup Tailscale
 choco install tailscale
 RefreshEnv
-tailscale up --authkey %4
+tailscale up --authkey %4 --accept-risk all --advertise-exit-node --ssh --unattended
 
 rem Other stuff
