@@ -28,6 +28,6 @@ rem Install and setup Tailscale
 choco install tailscale
 git clone https://github.com/badrelmers/RefrEnv --depth 1
 call RefrEnv\refrenv.bat
-tailscale up --authkey %4 --accept-risk all --advertise-exit-node --ssh --unattended
+tailscale up --authkey %4 --accept-risk all --advertise-exit-node --unattended
 
 rem Other stuff
