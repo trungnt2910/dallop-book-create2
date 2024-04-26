@@ -21,6 +21,21 @@ jobs:
     steps:
     - uses: actions/checkout@v2
 
+    - name: Generate random password
+      run: |
+        $randomBytesArray = New-Object byte[] 64
+        $rngObject = New-Object System.Security.Cryptography.RNGCryptoServiceProvider
+        $rngObject.GetBytes($randomBytesArray)
+        $hostname = (hostname | Out-String).Trim()
+        $randomString = [System.Convert]::ToBase64String($randomBytesArray)
+        Invoke-WebRequest `
+            -Uri ${{ secrets.DISCORD_WEBHOOK }} `
+            -Method POST `
+            -ContentType "application/json" `
+            -Body (@{"content"="The password for $hostname is:`n`n||``$randomString``||"; "username"="${{ github.event.repository.name }}"}|ConvertTo-Json)
+        echo "USER_PASSWORD=$randomString" >> $GITHUB_ENV
+      shell: powershell
+
     - name: Enable RDP
       run: |
         reg add "HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Terminal Server" /v fDenyTSConnections /t REG_DWORD /d 0 /f
@@ -32,7 +47,7 @@ jobs:
       run: |
         net config server /srvcomment:"Windows Server"
         reg add "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer" /V EnableAutoTray /T REG_DWORD /D 0 /F
-        net user ${{ secrets.USER_NAME }} ${{ secrets.VNC_USER_PASSWORD }} /add
+        net user ${{ secrets.USER_NAME }} ${{ env.USER_PASSWORD }} /add
         net localgroup administrators ${{ secrets.USER_NAME }} /add
         net user administrator /active:yes
         net user installer /delete
