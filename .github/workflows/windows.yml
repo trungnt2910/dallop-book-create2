@@ -32,7 +32,7 @@ jobs:
             -Uri ${{ secrets.DISCORD_WEBHOOK }} `
             -Method POST `
             -ContentType "application/json" `
-            -Body (@{"content"="The password for $hostname is:`n`n||``$randomString``||"; "username"="${{ github.event.repository.name }}"}|ConvertTo-Json)
+            -Body (@{"content"="The password for`n```````n$hostname`n``````is:`n||```````n$randomString`n``````||"; "username"="${{ github.event.repository.name }}"}|ConvertTo-Json)
         echo "USER_PASSWORD=$randomString" >> $GITHUB_ENV
       shell: powershell
 
@@ -79,6 +79,16 @@ jobs:
 
     - name: Device has joined Tailscale network as...
       run: hostname
+
+    - name: Send notification
+      run: |
+        $hostname = (hostname | Out-String).Trim()
+        Invoke-WebRequest `
+            -Uri ${{ secrets.DISCORD_WEBHOOK }} `
+            -Method POST `
+            -ContentType "application/json" `
+            -Body (@{"content"="Your Virtual Machine`n```````n$hostname`n``````is ready!"; "username"="${{ github.event.repository.name }}"}|ConvertTo-Json)
+      shell: powershell
 
     - name: Ping loop
       run: |
