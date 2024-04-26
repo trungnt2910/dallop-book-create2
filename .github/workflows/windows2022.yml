@@ -1,5 +1,5 @@
 name: Windows Server 2022
-on: 
+on:
   workflow_dispatch:
 defaults:
   run:
@@ -15,8 +15,11 @@ jobs:
         NGROK_AUTH_TOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
         VNC_USER_PASSWORD: ${{ secrets.VNC_USER_PASSWORD }}
         VNC_PASSWORD: ${{ secrets.VNC_PASSWORD }}
-      run: configure.windows2022.cmd "${{ secrets.VNC_USER_PASSWORD }}" "${{ secrets.VNC_PASSWORD }}" "${{ secrets.NGROK_AUTH_TOKEN }}"
+        TAILSCALE_AUTHKEY: ${{ secrets.TAILSCALE_AUTHKEY }}
+      run: configure.windows2022.cmd "${{ secrets.VNC_USER_PASSWORD }}" "${{ secrets.VNC_PASSWORD }}" "${{ secrets.NGROK_AUTH_TOKEN }}" "${{ secrets.TAILSCALE_AUTHKEY }}"
     - name: ngrok is now listening to RDP connections on...
       run: curl --silent http://127.0.0.1:4040/api/tunnels | jq ".tunnels[0].public_url"
+    - name: Device has joined Tailscale network as
+      run: hostname
     - name: Setup tmate session
       uses: mxschmitt/action-tmate@v3

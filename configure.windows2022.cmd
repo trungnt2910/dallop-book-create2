@@ -1,4 +1,4 @@
-rem configure.cmd VNC_USER_PASSWORD VNC_PASSWORD NGROK_AUTH_TOKEN
+rem configure.cmd VNC_USER_PASSWORD VNC_PASSWORD NGROK_AUTH_TOKEN TAILSCALE_AUTHKEY
 
 rem Install and setup ngrok
 choco install ngrok
@@ -23,5 +23,10 @@ sc config Audiosrv start= auto
 sc start audiosrv
 ICACLS C:\Windows\Temp /grant RDP_USER:F
 ICACLS C:\Windows\installer /grant RDP_USER:F
+
+rem Install and setup Tailscale
+powershell -Command "Start-Process msiexec.exe -Wait -ArgumentList '/passive /i tailscale-setup-1.64.2-amd64.msi'"
+RefreshEnv
+tailscale up --authkey %4
 
 rem Other stuff
