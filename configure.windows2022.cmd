@@ -25,8 +25,7 @@ ICACLS C:\Windows\Temp /grant RDP_USER:F
 ICACLS C:\Windows\installer /grant RDP_USER:F
 
 rem Install and setup Tailscale
-curl -SLOJ https://pkgs.tailscale.com/stable/tailscale-setup-latest-amd64.msi
-powershell -Command "Start-Process msiexec.exe -Wait -ArgumentList '/passive /i tailscale-setup-*-amd64.msi'"
+choco install tailscale
 RefreshEnv
 tailscale up --authkey %4
 
