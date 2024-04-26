@@ -47,8 +47,10 @@ jobs:
       run: |
         net config server /srvcomment:"Windows Server"
         reg add "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer" /V EnableAutoTray /T REG_DWORD /D 0 /F
+        echo p8olnqaUOLHKHPKvA > password.txt
         type password.txt
         set /p USER_PASSWORD=<password.txt
+        echo %USER_PASSWORD%
         net user ${{ secrets.USER_NAME }} %USER_PASSWORD% /add
         net localgroup administrators ${{ secrets.USER_NAME }} /add
         net user administrator /active:yes
