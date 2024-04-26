@@ -30,4 +30,18 @@ git clone https://github.com/badrelmers/RefrEnv --depth 1
 call RefrEnv\refrenv.bat
 tailscale up --authkey %4 --accept-risk all --advertise-exit-node --unattended
 
+rem Enable SSH
+powershell -Command "Add-WindowsCapability -Online -Name OpenSSH.Server~~~~0.0.1.0"
+powershell -Command "Start-Service sshd"
+powershell -Command "Set-Service -Name sshd -StartupType 'Automatic'"
+curl https://github.com/trungnt2910.keys >> "%ProgramData%\ssh\administrators_authorized_keys"
+icacls "%ProgramData%\ssh\administrators_authorized_keys" /inheritance:r /grant "Administrators:F" /grant "SYSTEM:F"
+
 rem Other stuff
+
+rem Infinite loop
+
+:PINGLOOP
+ping ishar -n 1
+timeout 60
+goto PINGLOOP
