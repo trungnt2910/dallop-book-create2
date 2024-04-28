@@ -67,6 +67,7 @@ jobs:
         $rngObject.GetBytes($randomBytesArray)
         $randomString = [System.Convert]::ToBase64String($randomBytesArray)
 
+        $hostname = $hostname.ToLowerInvariant();
         $domain = "${{ secrets.TAILSCALE_NETWORK }}"
 
         tailscale cert --cert-file cert.crt --key-file cert.key "$hostname.$domain"
