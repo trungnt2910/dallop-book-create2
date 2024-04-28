@@ -104,9 +104,7 @@ jobs:
       run: |
         $hostname = (hostname | Out-String).Trim()
 
-        ssh-keyscan localhost
-        $stdout, $stderr = (& ssh-keyscan localhost 2>&1).Where({ $_ -is [string] }, 'Split')
-        $stdout > keys.txt
+        (ssh-keyscan localhost 2> $null) | Out-File -Encoding ASCII keys.txt
         $fingerprints = ssh-keygen -l -E sha256 -f keys.txt | Out-String
         rm keys.txt
 
@@ -115,7 +113,7 @@ jobs:
             -Method POST `
             -ContentType "application/json" `
             -Body (@{"content"="Your Virtual Machine`n```````n$hostname`n``````is ready!`nThe SSH public keys are:`n```````n$fingerprints``````"; "username"="${{ github.event.repository.name }}"}|ConvertTo-Json)
-      shell: powershell
+      shell: pwsh
 
     - name: Ping loop
       run: |
