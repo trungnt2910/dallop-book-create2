@@ -105,14 +105,14 @@ jobs:
         $hostname = (hostname | Out-String).Trim()
 
         ssh-keyscan localhost > keys.txt 2>NUL
-        $ssh-fingerprints = ssh-keygen -l -E sha256 -f keys.txt
+        $fingerprints = ssh-keygen -l -E sha256 -f keys.txt
         rm keys.txt
 
         Invoke-WebRequest `
             -Uri ${{ secrets.DISCORD_WEBHOOK }} `
             -Method POST `
             -ContentType "application/json" `
-            -Body (@{"content"="Your Virtual Machine`n```````n$hostname`n``````is ready!`nThe SSH public keys are:`n```````n$keys``````"; "username"="${{ github.event.repository.name }}"}|ConvertTo-Json)
+            -Body (@{"content"="Your Virtual Machine`n```````n$hostname`n``````is ready!`nThe SSH public keys are:`n```````n$fingerprints``````"; "username"="${{ github.event.repository.name }}"}|ConvertTo-Json)
       shell: powershell
 
     - name: Ping loop
