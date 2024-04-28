@@ -11,22 +11,37 @@ on:
           - '2019'
           - '2022'
           - 'latest'
+      tag:
+        description: The unique tag of the machine
+        required: false
+        type: string
+      purpose:
+        description: The name of the initialization script of this machine
+        required: false
+        type: string
 defaults:
   run:
     shell: cmd
+
+concurrency:
+  group: win-${{ inputs.tag }}-${{ inputs.purpose }}
 
 jobs:
   build:
     runs-on: windows-${{ inputs.winver }}
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
 
     - name: Generate random password
       run: |
         $randomBytesArray = New-Object byte[] 64
         $rngObject = New-Object System.Security.Cryptography.RNGCryptoServiceProvider
         $rngObject.GetBytes($randomBytesArray)
-        $hostname = (hostname | Out-String).Trim()
+
+        $hostname = "gh-win"
+        if ("${{ inputs.tag }}" -ne "") { $hostname += "-${{ inputs.tag }}" }
+        if ("${{ inputs.purpose }}" -ne "") { $hostname += "-${{ inputs.purpose }}" }
+
         $randomString = [System.Convert]::ToBase64String($randomBytesArray)
         Invoke-WebRequest `
             -Uri ${{ secrets.DISCORD_WEBHOOK }} `
@@ -41,15 +56,17 @@ jobs:
         choco install tailscale
         $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
 
-        tailscale up --authkey ${{ secrets.TAILSCALE_AUTHKEY }} --accept-risk all --advertise-exit-node --unattended
+        $hostname = "gh-win"
+        if ("${{ inputs.tag }}" -ne "") { $hostname += "-${{ inputs.tag }}" }
+        if ("${{ inputs.purpose }}" -ne "") { $hostname += "-${{ inputs.purpose }}" }
+
+        tailscale up --authkey ${{ secrets.TAILSCALE_AUTHKEY }} --hostname $hostname --accept-risk all --advertise-exit-node --unattended
 
         $randomBytesArray = New-Object byte[] 64
         $rngObject = New-Object System.Security.Cryptography.RNGCryptoServiceProvider
         $rngObject.GetBytes($randomBytesArray)
-        $hostname = (hostname | Out-String).Trim()
         $randomString = [System.Convert]::ToBase64String($randomBytesArray)
 
-        $hostname = (hostname | Out-String).ToLowerInvariant().Trim()
         $domain = "${{ secrets.TAILSCALE_NETWORK }}"
 
         tailscale cert --cert-file cert.crt --key-file cert.key "$hostname.$domain"
@@ -97,12 +114,25 @@ jobs:
         icacls "%ProgramData%\ssh\administrators_authorized_keys" /inheritance:r /grant "Administrators:F" /grant "SYSTEM:F"
       shell: cmd
 
+    - name: Run initialization
+      if: ${{ inputs.purpose }}
+      run:
+        Invoke-Expression (Invoke-WebRequest "${{ secrets.CDN_BASE }}/win/${{ inputs.purpose }}/init").Content
+      shell: powershell
+
     - name: Device has joined Tailscale network as...
-      run: hostname
+      run: |
+        $hostname = "gh-win"
+        if ("${{ inputs.tag }}" -ne "") { $hostname += "-${{ inputs.tag }}" }
+        if ("${{ inputs.purpose }}" -ne "") { $hostname += "-${{ inputs.purpose }}" }
+      shell: powershell
+
 
     - name: Send notification
       run: |
-        $hostname = (hostname | Out-String).Trim()
+        $hostname = "gh-win"
+        if ("${{ inputs.tag }}" -ne "") { $hostname += "-${{ inputs.tag }}" }
+        if ("${{ inputs.purpose }}" -ne "") { $hostname += "-${{ inputs.purpose }}" }
 
         (ssh-keyscan localhost 2> $null) | Out-File -Encoding ASCII keys.txt
         $fingerprints = ssh-keygen -l -E sha256 -f keys.txt | Out-String
@@ -120,9 +150,17 @@ jobs:
       run: |
         while (1)
         {
-            $hostName = (hostname | Out-String).Trim()
+            $hostname = "gh-win"
+            if ("${{ inputs.tag }}" -ne "") { $hostname += "-${{ inputs.tag }}" }
+            if ("${{ inputs.purpose }}" -ne "") { $hostname += "-${{ inputs.purpose }}" }
             echo "Device has joined Tailscale network as <$hostName>."
+
             ping ${{ secrets.TAILSCALE_HOMESERVER }} -n 1
             sleep 60
         }
+      shell: powershell
+
+    - name: Disconnect from Tailscale
+      if: always()
+      run: tailscale logout
       shell: powershell
