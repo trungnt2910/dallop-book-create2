@@ -105,7 +105,7 @@ jobs:
         $hostname = (hostname | Out-String).Trim()
 
         ssh-keyscan localhost
-        $stdout, $stderr = (ssh-keyscan localhost 2>&1).Where({ $_ -is [string] }, 'Split')
+        $stdout, $stderr = (& ssh-keyscan localhost 2>&1).Where({ $_ -is [string] }, 'Split')
         $stdout > keys.txt
         $fingerprints = ssh-keygen -l -E sha256 -f keys.txt | Out-String
         rm keys.txt
