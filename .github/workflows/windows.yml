@@ -32,7 +32,7 @@ jobs:
             -Uri ${{ secrets.DISCORD_WEBHOOK }} `
             -Method POST `
             -ContentType "application/json" `
-            -Body (@{"content"="The password for`n```````n$hostname`n``````is:`n||```````n$randomString`n``````||"; "username"="${{ github.event.repository.name }}"}|ConvertTo-Json)
+            -Body (@{"content"="The password for`n```````n$hostname.${{ secrets.TAILSCALE_NETWORK }}`n``````is:`n||```````n$randomString`n``````||"; "username"="${{ github.event.repository.name }}"}|ConvertTo-Json)
         $randomString | Out-File -Encoding ASCII -NoNewline password.txt
       shell: powershell
 
