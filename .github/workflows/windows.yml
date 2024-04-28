@@ -106,7 +106,7 @@ jobs:
 
         (ssh-keyscan localhost 2> $null) | Out-File -Encoding ASCII keys.txt
         $fingerprints = ssh-keygen -l -E sha256 -f keys.txt | Out-String
-        $fingerprints = $finterprints.Replace(" localhost ", " $hostname ")
+        $fingerprints = $fingerprints.Replace(" localhost ", " $hostname ")
         rm keys.txt
 
         Invoke-WebRequest `
