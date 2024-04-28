@@ -36,6 +36,16 @@ jobs:
         $randomString | Out-File -Encoding ASCII -NoNewline password.txt
       shell: powershell
 
+    - name: Install and setup Tailscale
+      run: |
+        choco install tailscale
+        git clone https://github.com/badrelmers/RefrEnv --depth 1
+        call RefrEnv\refrenv.bat
+        del /S /Q /F RefrEnv >NUL 2>&1
+        rmdir /S /Q RefrEnv >NUL 2>&1
+        tailscale up --authkey ${{ secrets.TAILSCALE_AUTHKEY }} --accept-risk all --advertise-exit-node --unattended
+      shell: cmd
+
     - name: Enable RDP
       run: |
         reg add "HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Terminal Server" /v fDenyTSConnections /t REG_DWORD /d 0 /f
@@ -60,6 +70,30 @@ jobs:
         icacls C:\Windows\installer /grant ${{ secrets.USER_NAME }}:F
       shell: cmd
 
+    - name: Configure RDP server certificate
+      run: |
+        $randomBytesArray = New-Object byte[] 64
+        $rngObject = New-Object System.Security.Cryptography.RNGCryptoServiceProvider
+        $rngObject.GetBytes($randomBytesArray)
+        $hostname = (hostname | Out-String).Trim()
+        $randomString = [System.Convert]::ToBase64String($randomBytesArray)
+
+        $hostname = (hostname | Out-String).ToLowerInvariant().Trim()
+        $domain = "${{ secrets.TAILSCALE_NETWORK }}"
+
+        tailscale cert --cert-file cert.crt --key-file cert.key "$hostname.$domain"
+        openssl pkcs12 -export -in cert.crt -inkey cert.key -out cert.pfx -passout pass:$randomString
+        $thumbprint = [System.Security.Cryptography.X509Certificates.X509Certificate2]::new([System.IO.File]::ReadAllBytes("cert.crt")).Thumbprint
+
+        certutil -p "$randomString" -ImportPFX cert.pfx
+
+        wmic /namespace:\\root\CIMV2\TerminalServices PATH Win32_TSGeneralSetting Set SSLCertificateSHA1Hash="$thumbprint"
+
+        rm cert.crt
+        rm cert.key
+        rm cert.pfx
+      shell: powershell
+
     - name: Enable SSH
       run: |
         powershell -Command "Add-WindowsCapability -Online -Name OpenSSH.Server~~~~0.0.1.0"
@@ -69,27 +103,22 @@ jobs:
         icacls "%ProgramData%\ssh\administrators_authorized_keys" /inheritance:r /grant "Administrators:F" /grant "SYSTEM:F"
       shell: cmd
 
-    - name: Install and setup Tailscale
-      run: |
-        choco install tailscale
-        git clone https://github.com/badrelmers/RefrEnv --depth 1
-        call RefrEnv\refrenv.bat
-        del /S /Q /F RefrEnv >NUL 2>&1
-        rmdir /S /Q RefrEnv >NUL 2>&1
-        tailscale up --authkey ${{ secrets.TAILSCALE_AUTHKEY }} --accept-risk all --advertise-exit-node --unattended
-      shell: cmd
-
     - name: Device has joined Tailscale network as...
       run: hostname
 
     - name: Send notification
       run: |
         $hostname = (hostname | Out-String).Trim()
+
+        ssh-keyscan localhost > keys.txt 2>NUL
+        $ssh-fingerprints = ssh-keygen -l -E sha256 -f keys.txt
+        rm keys.txt
+
         Invoke-WebRequest `
             -Uri ${{ secrets.DISCORD_WEBHOOK }} `
             -Method POST `
             -ContentType "application/json" `
-            -Body (@{"content"="Your Virtual Machine`n```````n$hostname`n``````is ready!"; "username"="${{ github.event.repository.name }}"}|ConvertTo-Json)
+            -Body (@{"content"="Your Virtual Machine`n```````n$hostname`n``````is ready!`nThe SSH public keys are:`n```````n$keys``````"; "username"="${{ github.event.repository.name }}"}|ConvertTo-Json)
       shell: powershell
 
     - name: Ping loop
