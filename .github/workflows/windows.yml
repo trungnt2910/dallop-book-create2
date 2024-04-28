@@ -104,10 +104,8 @@ jobs:
       run: |
         $hostname = (hostname | Out-String).Trim()
 
-        #ssh-keyscan localhost > keys.txt 2> $null
-        #$fingerprints = ssh-keygen -l -E sha256 -f keys.txt
-        #rm keys.txt
-        $fingerprints = ""
+        (ssh-keyscan localhost | Out-File -Encoding ASCII test.txt) 2>$null
+        $fingerprints = ssh-keygen -l -E sha256 -f test.txt | Out-String
 
         Invoke-WebRequest `
             -Uri ${{ secrets.DISCORD_WEBHOOK }} `
