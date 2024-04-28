@@ -104,7 +104,7 @@ jobs:
       run: |
         $hostname = (hostname | Out-String).Trim()
 
-        ssh-keyscan localhost > keys.txt 2>NUL
+        ssh-keyscan localhost > keys.txt 2> $null
         $fingerprints = ssh-keygen -l -E sha256 -f keys.txt
         rm keys.txt
 
