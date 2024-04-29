@@ -139,8 +139,8 @@ jobs:
             if ("${{ inputs.tag }}" -ne "") { $hostname += "-${{ inputs.tag }}" }
             if ("${{ inputs.purpose }}" -ne "") { $hostname += "-${{ inputs.purpose }}" }
 
-            sudo $env:HOME/go/bin/tailscaled &
-            $env:HOME/go/bin/tailscale up --authkey ${{ secrets.TAILSCALE_AUTHKEY }} --hostname $hostname --accept-risk all --ssh --advertise-exit-node
+            bash -c "sudo `$HOME/go/bin/tailscaled &"
+            bash -c "`$HOME/go/bin/tailscale up --authkey ${{ secrets.TAILSCALE_AUTHKEY }} --hostname $hostname --accept-risk all --ssh --advertise-exit-node"
           shell: pwsh
 
         - name: Run initialization
