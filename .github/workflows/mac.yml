@@ -72,9 +72,8 @@ jobs:
 
         - name: Install Tailscale
           run: |
-            brew update
-            brew unlink go
-            brew install go
+            brew install go || true
+            brew link --overwrite go || true
             go install tailscale.com/cmd/tailscale{,d}@main
             sudo $HOME/go/bin/tailscaled &
             $HOME/go/bin/tailscale up --authkey ${{ secrets.TAILSCALE_AUTHKEY }} --accept-risk all --ssh --advertise-exit-node
