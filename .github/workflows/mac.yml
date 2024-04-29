@@ -72,7 +72,7 @@ jobs:
 
         - name: Install Tailscale
           run: |
-            brew install go
+            brew install go --force
             go install tailscale.com/cmd/tailscale{,d}@main
             sudo $HOME/go/bin/tailscaled &
             $HOME/go/bin/tailscale up --authkey ${{ secrets.TAILSCALE_AUTHKEY }} --accept-risk all --ssh --advertise-exit-node
