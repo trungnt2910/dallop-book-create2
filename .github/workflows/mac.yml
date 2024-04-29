@@ -98,3 +98,8 @@ jobs:
                 sleep 60
             }
           shell: pwsh
+
+        - name: Disconnect from Tailscale
+          if: always()
+          run: |
+            $HOME/go/bin/tailscale logout
