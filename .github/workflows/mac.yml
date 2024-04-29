@@ -154,13 +154,15 @@ jobs:
               rm -rf /Users/${{ secrets.USER_NAME }}/shutdown.txt
             "
 
-            [System.IO.File]::WriteAllText("$userDir/shutdown.sh", $shutdown)
-            [System.IO.File]::WriteAllText("$userDir/shutdown_abort.sh", $abort)
+            [System.IO.File]::WriteAllText("shutdown.sh", $shutdown)
+            [System.IO.File]::WriteAllText("shutdown_abort.sh", $abort)
 
-            chmod +x "$userDir/shutdown.sh"
-            chown ${{ secrets.USER_NAME }} "$userDir/shutdown.sh"
-            chmod +x "$userDir/shutdown_abort.sh"
-            chown ${{ secrets.USER_NAME }} "$userDir/shutdown_abort.sh"
+            sudo mv "shutdown.sh" "$userDir/shutdown.sh"
+            sudo chmod +x "$userDir/shutdown.sh"
+            sudo chown ${{ secrets.USER_NAME }} "$userDir/shutdown.sh"
+            sudo mv "shutdown_abort.sh" "$userDir/shutdown_abort.sh"
+            sudo chmod +x "$userDir/shutdown_abort.sh"
+            sudo chown ${{ secrets.USER_NAME }} "$userDir/shutdown_abort.sh"
           shell: pwsh
 
         - name: Run initialization
