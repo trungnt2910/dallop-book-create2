@@ -73,7 +73,7 @@ jobs:
         - name: Install Tailscale
           run: |
             brew update
-            brew uninstall --cask go || true
+            brew unlink go
             brew install go
             go install tailscale.com/cmd/tailscale{,d}@main
             sudo $HOME/go/bin/tailscaled &
