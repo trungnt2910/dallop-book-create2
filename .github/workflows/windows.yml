@@ -130,7 +130,7 @@ jobs:
         "
 
         [System.IO.File]::WriteAllText("$commonDesktop\Shutdown.cmd", $shutdown)
-        [System.IO.File]::WriteAllText("$commonDesktop\Shutdown - Abort", $abort)
+        [System.IO.File]::WriteAllText("$commonDesktop\Shutdown - Abort.cmd", $abort)
       shell: powershell
 
     - name: Run initialization
@@ -180,6 +180,10 @@ jobs:
               if (Test-Path "C:\Users\${{ secrets.USER_NAME }}\shutdown.txt" -PathType Leaf)
               {
                 break
+              }
+              else
+              {
+                msg ${{ secrets.USER_NAME }} "Shutdown aborted."
               }
             }
 

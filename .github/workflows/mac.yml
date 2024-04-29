@@ -143,6 +143,26 @@ jobs:
             bash -c "`$HOME/go/bin/tailscale up --authkey ${{ secrets.TAILSCALE_AUTHKEY }} --hostname $hostname --accept-risk all --ssh --advertise-exit-node"
           shell: pwsh
 
+        - name: Install scripts
+          run: |
+            $userDir = "/Users/${{ secrets.USER_NAME }}"
+            $shutdown = "
+              touch /Users/${{ secrets.USER_NAME }}/shutdown.txt
+            "
+
+            $abort = "
+              rm -rf /Users/${{ secrets.USER_NAME }}/shutdown.txt
+            "
+
+            [System.IO.File]::WriteAllText("$userDir/shutdown.sh", $shutdown)
+            [System.IO.File]::WriteAllText("$userDir/shutdown_abort.sh", $abort)
+
+            chmod +x "$userDir/shutdown.sh"
+            chown ${{ secrets.USER_NAME }} "$userDir/shutdown.sh"
+            chmod +x "$userDir/shutdown_abort.sh"
+            chown ${{ secrets.USER_NAME }} "$userDir/shutdown_abort.sh"
+          shell: pwsh
+
         - name: Run initialization
           if: ${{ inputs.purpose }}
           run:
@@ -182,6 +202,20 @@ jobs:
                 if ("${{ inputs.tag }}" -ne "") { $hostname += "-${{ inputs.tag }}" }
                 if ("${{ inputs.purpose }}" -ne "") { $hostname += "-${{ inputs.purpose }}" }
                 echo "Device has joined Tailscale network as <$hostName>."
+
+                if (Test-Path "/Users/${{ secrets.USER_NAME }}/shutdown.txt" -PathType Leaf)
+                {
+                  osascript -e 'display notification "Shutdown requested." with title "Shutdown"'
+                  sleep 60
+                  if (Test-Path "/Users/${{ secrets.USER_NAME }}/shutdown.txt" -PathType Leaf)
+                  {
+                    break
+                  }
+                  else
+                  {
+                    osascript -e 'display notification "Shutdown aborted." with title "Shutdown"'
+                  }
+                }
 
                 ping ${{ secrets.TAILSCALE_HOMESERVER }} -c 1
                 sleep 60
