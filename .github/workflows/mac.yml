@@ -98,9 +98,9 @@ jobs:
 
         - name: Set VNC password
           run: |
-              # http://hints.macworld.com/article.php?story=20071103011608872
-              echo "$(cat password.txt)" | perl -we 'BEGIN { @k = unpack "C*", pack "H*", "1734516E8BA8C5E2FF1C39567390ADCA"}; $_ = <>; chomp; s/^(.{8}).*/$1/; @p = unpack "C*", $_; foreach (@k) { printf "%02X", $_ ^ (shift @p || 0) }; print "\n"' | sudo tee /Library/Preferences/com.apple.VNCSettings.txt
-              rm -rf password.txt
+            # http://hints.macworld.com/article.php?story=20071103011608872
+            echo "$(cat password.txt)" | perl -we 'BEGIN { @k = unpack "C*", pack "H*", "1734516E8BA8C5E2FF1C39567390ADCA"}; $_ = <>; chomp; s/^(.{8}).*/$1/; @p = unpack "C*", $_; foreach (@k) { printf "%02X", $_ ^ (shift @p || 0) }; print "\n"' | sudo tee /Library/Preferences/com.apple.VNCSettings.txt
+            rm -rf password.txt
 
         - name: Start VNC
           run: |
@@ -115,10 +115,10 @@ jobs:
               exit 0
             fi
 
-            launchctl load -w /System/Library/LaunchDaemons/com.apple.screensharing.plist || true
+            sudo launchctl load -w /System/Library/LaunchDaemons/com.apple.screensharing.plist || true
 
             epoch="$(date +%s)"
-            sqlite3 "/Library/Application Support/com.apple.TCC/TCC.db" \
+            sudo sqlite3 "/Library/Application Support/com.apple.TCC/TCC.db" \
               " BEGIN TRANSACTION; \
                 DELETE FROM access WHERE client = 'com.apple.screensharing.agent'; \
                 COMMIT; \
