@@ -161,4 +161,4 @@ jobs:
         - name: Disconnect from Tailscale
           if: always()
           run: |
-            tailscale logout
+            sudo tailscale logout
