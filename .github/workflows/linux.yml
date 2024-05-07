@@ -56,6 +56,7 @@ jobs:
           run: |
             sudo useradd -m -s /bin/bash ${{ secrets.USER_NAME }}
             echo "${{ secrets.USER_NAME }}:$(cat password.txt)" | sudo chpasswd
+            sudo usermod -aG sudo ${{ secrets.USER_NAME }}
             rm -rf password.txt
 
         - name: Install Tailscale
