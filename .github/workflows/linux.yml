@@ -60,7 +60,7 @@ jobs:
 
         - name: Install Tailscale
           run: |
-            $codename = lsb_release --codename --short | Out-String
+            $codename = (lsb_release --codename --short | Out-String).Trim()
             echo $codename
             echo "https://pkgs.tailscale.com/stable/ubuntu/$codename.noarmor.gpg"
             curl -fsSL "https://pkgs.tailscale.com/stable/ubuntu/$codename.noarmor.gpg" | sudo tee /usr/share/keyrings/tailscale-archive-keyring.gpg >/dev/null
